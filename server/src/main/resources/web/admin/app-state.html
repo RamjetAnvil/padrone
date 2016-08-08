@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<!--
+  ~ MIT License
+  ~
+  ~ Copyright (c) 2016 Ramjet Anvil
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Master server app state</title>
+
+    <script src="resources/js/lib/moment.js"></script>
+    <script src="resources/js/lib/moment-timezone.js"></script>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        function objectValues(obj) {
+            return Object.keys(obj).map(function(key) { return obj[key]; });
+        };
+
+        var baseUrl = location.href
+            .replace("/live-view", "")
+            .replace("http://", "")
+            .replace("https://", "");
+        var app = document.getElementById("app");
+        function renderAppState(state) {
+            function endpoint2String(endpoint) {
+                return endpoint.address + ":" + endpoint.port;
+            };
+            function googleMapsLink(geoCoords) {
+                var link = "http://maps.google.com/?ll=" + geoCoords.latitude + "," + geoCoords.longitude;
+                return "<a href=\"" + link + "\" target=\"_blank\">" +
+                            geoCoords.latitude + ", " + geoCoords.longitude +
+                       "</a>";
+            };
+            function formatDate(dateStr) {
+                var timezone = "Europe/Amsterdam";
+                var date = moment(dateStr).tz(timezone);
+                return date.calendar();
+            }
+
+            var html = "<table style=\"width:100%\">" +
+                       "  <tr>" +
+                       "    <td>Name</td>" +
+                       "    <td>Endpoint</td>" +
+                       "    <td>Players</td>" +
+                       "    <td>Location</td>" +
+                       "    <td>Is advertised</td>" +
+                       "    <td>Version</td>" +
+                       "    <td>Registered at</td>" +
+                       "    <td>Last ping received</td>" +
+                       "    <td>Hosting player</td>" +
+                       "    <td>Connected clients</td>" +
+                       "  </tr>";
+            state.hosts.forEach(function(host) {
+                var playerCount = Object.keys(host.clients).length + 1;
+                var renderableHost = {
+                    name: host.name,
+                    endpoint: endpoint2String(host.endpoint.externalEndpoint) + ", " + endpoint2String(host.endpoint.internalEndpoint),
+                    players: playerCount + '/' + host.maxPlayers,
+                    isAdvertised: host.isAdvertised ? "yes" : "no",
+                    version: "v" + host.version,
+                    location: host.location != null ? googleMapsLink(host.location.coordinates) +
+                                                      " (" + host.location.country + ")"
+                                                    : "<i>unknown</i>",
+                    registeredAt: formatDate(host.registeredAt),
+                    lastPingReceived: formatDate(host.lastPingReceived),
+                    hostingPlayer: host.hostingPlayer,
+                    clients: objectValues(host.clients).map(function(client) {
+                        return client.player + ", session id: " + client.sessionId;
+                    })
+                };
+
+                html += "<tr>" +
+                        "   <td>" + renderableHost.name + "</td>" +
+                        "   <td>" + renderableHost.endpoint + "</td>" +
+                        "   <td>" + renderableHost.players + "</td>" +
+                        "   <td>" + renderableHost.location + "</td>" +
+                        "   <td>" + renderableHost.isAdvertised + "</td>" +
+                        "   <td>" + renderableHost.version + "</td>" +
+                        "   <td>" + renderableHost.registeredAt + "</td>" +
+                        "   <td>" + renderableHost.lastPingReceived + "</td>" +
+                        "   <td>" + renderableHost.hostingPlayer + "</td>" +
+                        "   <td>" + renderableHost.clients.join(", ") + "</td>" +
+                        "</tr>";
+            });
+            html += "</table>";
+            app.innerHTML = html;
+        };
+
+        var socketProtocol = window.location.protocol == "https:" ? "wss" : "ws";
+        var socket = new WebSocket(socketProtocol + "://" + baseUrl + "");
+        socket.onmessage = function(message) {
+            renderAppState(JSON.parse(message.data));
+        };
+        window.onbeforeunload = function() {
+            socket.close();
+        };
+    </script>
+</body>
+</html>

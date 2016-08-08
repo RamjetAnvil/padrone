@@ -1,0 +1,19 @@
+.idea/
+/project/boot/
+/project/plugins/project
+bin/
+target/
+lib_managed/
+src_managed/
+test-output/
+*.iml
+.classpath_nb
+
+# Project specific ignores
+csharp_client/**/packages
+csharp_client/**/obj
+csharp_client/**/*.suo
+
+server/GeoLite2-City.mmdb
+server/logs/
+server/output.log
