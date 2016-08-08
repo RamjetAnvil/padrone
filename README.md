@@ -1,6 +1,6 @@
 # Padrone
 
->*Pa-drone*  
+>*Pa-drone*: a master; boss. 
 *Pa*: i.e. dad.  
 *Drone*: A person who does tedious or menial work; a drudge.
 
@@ -53,6 +53,7 @@ The `csharp_client` folder contains a Unity-based client.
 
 - Integrate Steam friends list to allow players to join a friend's game.
 - Password protected servers
+- Pluggable facilities for match-making
 
 ## License
 
