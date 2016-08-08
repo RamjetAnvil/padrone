@@ -1,6 +1,6 @@
 # Padrone
 
->*Pa-drone*: a master; boss. 
+>*Pa-drone*: a master; boss.  
 *Pa*: i.e. dad.  
 *Drone*: A person who does tedious or menial work; a drudge.
 
