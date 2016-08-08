@@ -1,7 +1,7 @@
 # Padrone
 
 >*Pa-drone*: a master; boss.  
-*Pa*: i.e. dad.  
+*Pa*: dad.  
 *Drone*: A person who does tedious or menial work; a drudge.
 
 Master server technology written in Scala that allows users of various platforms (e.g. Steam/Itch/Oculus) to
