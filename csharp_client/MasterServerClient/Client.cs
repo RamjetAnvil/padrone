@@ -170,7 +170,7 @@ namespace RamjetAnvil.Padrone.Client {
             }
             AddHeader("Accept", "application/json, text/plain");
             var authToken = _authTokenProvider();
-            AddHeader("X-Heerschap-Auth", authToken.AsBase64());
+            AddHeader("X-Padrone-Auth", authToken.AsBase64());
             uri = _masterServerUrl + "/" + uri;
             _coroutineScheduler.Run(ExecuteWebRequest(uri, method, data, _customHeaders, onComplete));
         }
