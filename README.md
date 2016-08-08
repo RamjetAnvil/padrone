@@ -23,7 +23,7 @@ to host and join games.
 
 ## How does it work?
 
-Player A decides to host a server and the game calls /register-host providing login details,
+Player A decides to host a server. The game calls `/register-host` providing login details,
 an IP endpoint and a host name. The master server checks the login details and
 registers the host in its internal state.
 
@@ -32,7 +32,7 @@ one from this list. The game then calls `/join` with the server id and the maste
 server returns whether the join succeeded. The client then retrieves a session id
 that the game has to send to the host.
 
-Once Player B establishes a connection the host of Player A can call `/player-info`
+Once Player B establishes a connection Player A can call `/player-info`
 to verify that Player B indeed called `/join` on the Player A host.
 
 ## How to install
