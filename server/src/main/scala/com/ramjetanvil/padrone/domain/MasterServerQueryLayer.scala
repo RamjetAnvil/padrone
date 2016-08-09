@@ -112,11 +112,11 @@ object MasterServerQueryLayer {
                  (implicit locationDb: LocationDb): Seq[RemoteHost] = {
       val peerLocation = peerAddress.flatMap(locationDb(_).toOption)
       val hosts = db.hosts.values
-        .filter { host =>
-          !host.isPrivate &&
-          !(host.isPasswordProtected && hidePasswordProtected) &&
-          !(host.isFull && hideFull) &&
-          host.version == version
+        .filterNot { host =>
+          host.isPrivate ||
+          (if (hidePasswordProtected) host.isPasswordProtected else false) ||
+          (if (hideFull) host.isFull else false) ||
+          host.version != version
         }
         .map { hostRegistration =>
           val distance = for {
