@@ -35,6 +35,7 @@ import com.ramjetanvil.padrone.http.client.steam.AuthSessionTicket
 import com.ramjetanvil.padrone.util.IpEndpoint
 import com.ramjetanvil.padrone.util.geo.GeoCoords
 import com.ramjetanvil.padrone.domain.MasterServerQueryLayer._
+import com.ramjetanvil.padrone.domain.PasswordVerification.BCryptHash
 import com.ramjetanvil.padrone.http.client.itch
 import com.ramjetanvil.padrone.http.client.steam.AuthSessionTicket
 import com.ramjetanvil.padrone.http.server.DataTypes.GameCommunicationProtocol._
@@ -114,7 +115,13 @@ object JsonProtocols extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val JsonClientSecretFormat = singleValueFormat[ClientSecret, String](ClientSecret.apply, _.value)
   implicit val JsonClientStateFormat = jsonFormat5(ClientState)
   implicit val JsonPlayerSessionInfo = jsonFormat3(PlayerSessionInfo)
-  implicit val JsonHostFormat = jsonFormat10(Host)
+  // This is a hack to simply skip serialization of BCrypt hashes because
+  // we probably never want to serialize them with Json
+  implicit object JsonBCryptHashFormat extends JsonFormat[BCryptHash] {
+    override def write(obj: BCryptHash): JsValue = JsNull
+    override def read(json: JsValue): BCryptHash = deserializationError("Cannot deserialize a BCrypt hash")
+  }
+  implicit val JsonHostFormat = jsonFormat11(Host.apply)
   implicit val JsonRemoteHostFormat = jsonFormat9(RemoteHost)
   implicit val JsonErrorFormat = jsonFormat1(Error)
   implicit val JsonConnectionFormat = jsonFormat2(Connection)
@@ -172,9 +179,9 @@ object JsonProtocols extends SprayJsonSupport with DefaultJsonProtocol {
     }
 
     // Client messages
-    implicit val JsonPeerRegistrationRequestFormat = jsonFormat5(HostRegistrationRequest)
+    implicit val JsonPeerRegistrationRequestFormat = jsonFormat6(HostRegistrationRequest)
     implicit val JsonPingRequestFormat = jsonFormat2(PingRequest)
-    implicit val JsonJoinRequestFormat = jsonFormat1(JoinRequest)
+    implicit val JsonJoinRequestFormat = jsonFormat2(JoinRequest)
     implicit val JsonJoinResponseFormat = jsonFormat2(JoinResponse)
     implicit val JsonReportLeaveRequestFormat = jsonFormat2(ReportLeaveRequest)
     implicit val JsonErrorMessageFormat = jsonFormat2(ErrorMessage)

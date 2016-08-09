@@ -24,6 +24,7 @@
 
 package com.ramjetanvil.padrone.domain
 
+import java.security.SecureRandom
 import java.time.Instant
 
 import akka.actor.ActorSystem
@@ -31,6 +32,7 @@ import com.ramjetanvil.padrone.util.IpEndpoint
 import com.ramjetanvil.padrone.util.scheduling.ActorRescheduler
 import com.ramjetanvil.cqrs.Core._
 import com.ramjetanvil.padrone.domain.MasterServerQueryLayer.{ClientSecret, ClientSessionId, ClientState, Host, MasterServerDb}
+import com.ramjetanvil.padrone.domain.PasswordVerification.BCryptHash
 import com.ramjetanvil.padrone.http.client.Licensing.PlayerId
 import com.ramjetanvil.padrone.http.server.Authentication.UserAuthentication.AdminAuthentication.AdminPlayerId
 import com.ramjetanvil.padrone.http.server.DataTypes.GameCommunicationProtocol.HostRegistrationRequest
@@ -40,6 +42,7 @@ import com.ramjetanvil.padrone.util.geo.GeoDb.{Location, LocationDb}
 import com.typesafe.scalalogging.Logger
 import monocle.macros.GenLens
 import com.ramjetanvil.padrone.util.IpEndpoint
+import org.mindrot.jbcrypt.BCrypt
 import rx.lang.scala.{Observable, Subscription}
 
 import scala.concurrent.ExecutionContext
@@ -67,7 +70,8 @@ object MasterServerAggregate {
        that indeed this player had requested this join on the MS and has indeed a valid Volo license.
 
        Furthermore, this way we do not leak real Itch/Steam etc. user ids to the servers nor any other players. */
-    final case class Join(hostEndpoint: IpEndpoint, sessionId: ClientSessionId, secret: ClientSecret) extends Command
+    final case class Join(hostEndpoint: IpEndpoint, password: Option[String], sessionId: ClientSessionId,
+                          secret: ClientSecret) extends Command
     final case class ReportLeave(sessionId: ClientSessionId, hostEndpoint: IpEndpoint) extends Command
     case object Leave extends Command
   }
@@ -75,8 +79,7 @@ object MasterServerAggregate {
 
   sealed trait Event
   object Event {
-    final case class HostRegistered(hostingPlayer: Player, registration: HostRegistrationRequest,
-                              location: Option[Location]) extends Event
+    final case class HostRegistered(host: Host) extends Event
     final case class HostUnregistered(externalEndpoint: IpEndpoint) extends Event
     final case class Pinged(externalEndpoint: IpEndpoint) extends Event
 
@@ -86,7 +89,7 @@ object MasterServerAggregate {
   }
   type EventWithMeta = (Metadata, Event)
 
-  def createAggregateRoot(pingTimeout: FiniteDuration, joinTimeout: FiniteDuration)
+  def createAggregateRoot(pingTimeout: FiniteDuration, joinTimeout: FiniteDuration, bcryptHashStrength: Int)
                          (implicit locationDb: LocationDb,
                           ec: ExecutionContext,
                           actorSystem: ActorSystem,
@@ -96,6 +99,8 @@ object MasterServerAggregate {
     import monocle.std.map._
     import monocle.std.option.some
     import monocle.{Lens, Optional}
+
+    val hashPassword = BCryptHash.create(bcryptHashStrength) _
 
     val registeredHosts = GenLens[MasterServerDb](_.hosts)
     def registeredHostAt(endpoint: IpEndpoint): Lens[MasterServerDb, Option[Host]] = {
@@ -132,17 +137,27 @@ object MasterServerAggregate {
       }
 
       val commandResult: Try[Seq[Event]] = command match {
-        case RegisterHost(request) =>
-          val externalEndpoint = request.peerInfo.externalEndpoint
-          val hostLocation = request.peerInfo.location
-          findHost(externalEndpoint) match {
+        case RegisterHost(HostRegistrationRequest(hostName, peerInfo, password, shouldAdvertise, version, maxPlayers)) =>
+          val newHost = Host(
+            peerInfo,
+            hostName,
+            password.map(hashPassword),
+            shouldAdvertise,
+            peerInfo.location,
+            player,
+            version,
+            registeredAt = meta.timestamp,
+            lastPingReceived = meta.timestamp,
+            maxPlayers = maxPlayers)
+
+          findHost(peerInfo.externalEndpoint) match {
             case Some(existingHost) =>
               if(isAllowedToModify(existingHost)) {
-                succeedWith(unregisterHost(existingHost) :+ HostRegistered(player, request, hostLocation))
+                succeedWith(unregisterHost(existingHost) :+ HostRegistered(newHost))
               } else {
-                failWith(new Exception(s" $player is unauthorized to re-register at endpoint $externalEndpoint"))
+                failWith(new Exception(s" $player is unauthorized to re-register at endpoint ${peerInfo.externalEndpoint}"))
               }
-            case None => succeedWith(HostRegistered(player, request, hostLocation))
+            case None => succeedWith(HostRegistered(newHost))
           }
 
         case UnregisterHost(externalEndpoint) =>
@@ -179,9 +194,9 @@ object MasterServerAggregate {
               succeed
           }
 
-        case Join(hostEndpoint, sessionId, secret) =>
+        case Join(hostEndpoint, password, sessionId, secret) =>
           findHost(hostEndpoint) match {
-            case Some(host) if !host.isFull =>
+            case Some(host) if !host.isFull && host.password.verify(password) =>
               val maybeLeaveEvent = clientAt(player.id).get(db).map { leaver =>
                 Left(leaver.player.id, leaver.joinedIp)
               }.toSeq
@@ -216,10 +231,7 @@ object MasterServerAggregate {
 
       // TODO Use the state monad to allow for incremental state updates
       val updateDb = event match {
-        case HostRegistered(hostingPlayer, request, location) =>
-          val host = Host(request.peerInfo, request.hostName, request.shouldAdvertise, location,
-            hostingPlayer, request.version, timestamp, lastPingReceived = timestamp,
-            maxPlayers = request.maxPlayers)
+        case HostRegistered(host) =>
           registeredHosts.modify(hosts => hosts + (host.endpoint.externalEndpoint -> host))
 
         case HostUnregistered(externalEndpoint) =>
@@ -275,8 +287,8 @@ object MasterServerAggregate {
     // TODO Make sure it gets handled on a single thread
     val sub = events.subscribe(event => {
       event match {
-        case HostRegistered(_, registration, _) =>
-          scheduleRegistrationTimeout(registration.externalEndpoint)
+        case HostRegistered(host) =>
+          scheduleRegistrationTimeout(host.externalEndpoint)
         case HostUnregistered(endpoint) =>
           pingScheduler.cancelSchedule(endpoint)
         case Pinged(endpoint) =>

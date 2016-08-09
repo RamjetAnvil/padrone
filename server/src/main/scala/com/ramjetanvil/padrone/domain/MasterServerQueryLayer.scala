@@ -25,9 +25,11 @@
 package com.ramjetanvil.padrone.domain
 
 import java.net.InetAddress
+import java.security.SecureRandom
 import java.time.Instant
 import java.util.UUID
 
+import com.ramjetanvil.padrone.domain.PasswordVerification.{BCryptHash, BCryptHash$}
 import com.ramjetanvil.padrone.http.server.DataTypes.{Player, PlayerSessionInfo}
 import com.ramjetanvil.padrone.util.IpEndpoint
 import com.ramjetanvil.padrone.util.UnitOfMeasure.KiloMeters
@@ -58,9 +60,10 @@ object MasterServerQueryLayer {
   object ClientSecret {
     def generate() = ClientSecret(UUID.randomUUID().toString)
   }
-  case class Host(endpoint: PeerInfo, name: HostName, isAdvertised: Boolean, location: Option[Location],
-                  hostingPlayer: Player, version: GameVersion, registeredAt: Instant, lastPingReceived: Instant,
-                  maxPlayers: Int, clients: Map[ClientSessionId, ClientState] = Map.empty) {
+
+  case class Host(endpoint: PeerInfo, name: HostName, password: Option[BCryptHash], isAdvertised: Boolean,
+                  location: Option[Location], hostingPlayer: Player, version: GameVersion, registeredAt: Instant,
+                  lastPingReceived: Instant, maxPlayers: Int, clients: Map[ClientSessionId, ClientState] = Map.empty) {
     def playerCount = clients.size + 1
     def isFull = playerCount >= maxPlayers
     def externalEndpoint = endpoint.externalEndpoint

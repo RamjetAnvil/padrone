@@ -36,13 +36,14 @@ object DataTypes {
     case class FindHostRequest(hostName: String) extends ClientMessage
     case class HostRegistrationRequest(hostName: HostName,
                                        peerInfo: PeerInfo,
+                                       password: Option[String],
                                        shouldAdvertise: Boolean,
                                        version: GameVersion,
                                        maxPlayers: Int) extends ClientMessage {
       def externalEndpoint: IpEndpoint = peerInfo.externalEndpoint
     }
     case class PingRequest(hostEndpoint: IpEndpoint, connectedClients: Set[ClientSessionId]) extends ClientMessage
-    case class JoinRequest(hostEndpoint: IpEndpoint) extends ClientMessage
+    case class JoinRequest(hostEndpoint: IpEndpoint, password: Option[String]) extends ClientMessage
     case class ReportLeaveRequest(hostEndpoint: IpEndpoint, sessionId: ClientSessionId) extends ClientMessage
 
     sealed trait ServerMessage

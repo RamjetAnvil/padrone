@@ -85,7 +85,8 @@ object HttpApi {
     val pingTimeout = AppConfig.Server.getDuration("ping-timeout").toScalaDuration.asInstanceOf[FiniteDuration]
     val joinTimeout = AppConfig.Server.getDuration("join-timeout").toScalaDuration.asInstanceOf[FiniteDuration]
     val authHeader = AppConfig.Server.getString("auth-header")
-    val masterServer = MasterServerAggregate.createAggregateRoot(pingTimeout, joinTimeout)
+    val bcryptHashStrength = AppConfig.Server.getInt("bcrypt-hash-strength")
+    val masterServer = MasterServerAggregate.createAggregateRoot(pingTimeout, joinTimeout, bcryptHashStrength)
     val dispatchCommandAsAdmin: MasterServerAggregate.Command => Unit = command => {
       val metadata = Metadata(AdminAuthentication.DefaultAdmin, timestamp = Instant.now)
       masterServer.dispatchCommand((metadata, command))
@@ -262,7 +263,7 @@ object HttpApi {
             complete {
               val sessionId = ClientSessionId.generate()
               val secret = ClientSecret.generate()
-              dispatchCommand(Join(joinRequest.hostEndpoint, sessionId, secret)).map {
+              dispatchCommand(Join(joinRequest.hostEndpoint, joinRequest.password, sessionId, secret)).map {
                 case Success(_) => (StatusCodes.OK, Some(JoinResponse(sessionId, secret)))
                 case Failure(_) => (StatusCodes.NotAcceptable, None)
               }

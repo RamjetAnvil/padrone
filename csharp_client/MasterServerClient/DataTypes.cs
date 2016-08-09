@@ -147,13 +147,19 @@ namespace RamjetAnvil.Padrone.Client {
 
     public class JoinRequest {
         private readonly IPEndPoint _hostEndpoint;
+        private readonly String password;
 
-        public JoinRequest(IPEndPoint hostEndpoint) {
+        public JoinRequest(IPEndPoint hostEndpoint, string password) {
             _hostEndpoint = hostEndpoint;
+            this.password = password;
         }
 
         public IPEndPoint HostEndpoint {
             get { return _hostEndpoint; }
+        }
+
+        public string Password {
+            get { return password; }
         }
     }
 
