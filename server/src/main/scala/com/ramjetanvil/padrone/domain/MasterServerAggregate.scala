@@ -137,12 +137,12 @@ object MasterServerAggregate {
       }
 
       val commandResult: Try[Seq[Event]] = command match {
-        case RegisterHost(HostRegistrationRequest(hostName, peerInfo, password, shouldAdvertise, version, maxPlayers)) =>
+        case RegisterHost(HostRegistrationRequest(hostName, peerInfo, password, isPrivate, version, maxPlayers)) =>
           val newHost = Host(
             peerInfo,
             hostName,
             password.map(hashPassword),
-            shouldAdvertise,
+            isPrivate,
             peerInfo.location,
             player,
             version,

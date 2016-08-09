@@ -37,7 +37,7 @@ object DataTypes {
     case class HostRegistrationRequest(hostName: HostName,
                                        peerInfo: PeerInfo,
                                        password: Option[String],
-                                       shouldAdvertise: Boolean,
+                                       isPrivate: Boolean,
                                        version: GameVersion,
                                        maxPlayers: Int) extends ClientMessage {
       def externalEndpoint: IpEndpoint = peerInfo.externalEndpoint

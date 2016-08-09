@@ -209,13 +209,14 @@ object HttpApi {
           } ~
           (path("list-hosts") & parameters('version.as[String],
                                            'hideFull.as[Boolean] ? true,
-                                           'limit.as[Int] ? 50)) { (version, hideFull, limit) =>
+                                           'hidePasswordProtected.as[Boolean] ? true,
+                                           'limit.as[Int] ? 50)) { (version, hideFull, hidePasswordProtected, limit) =>
             extractClientIP { clientAddress =>
               encodeResponse {
                 complete {
                   val hostLimit = limit.clamp(0, 100)
                   val hosts = masterServer.currentState.map { state =>
-                    state.listHosts(GameVersion(version), hideFull, clientAddress.toOption)
+                    state.listHosts(GameVersion(version), hideFull, hidePasswordProtected, clientAddress.toOption)
                       .take(hostLimit)
                   }
                   hosts

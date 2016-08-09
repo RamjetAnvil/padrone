@@ -101,16 +101,16 @@ namespace RamjetAnvil.Padrone.Client {
         private readonly string _hostName;
         private readonly PeerInfo _peerInfo;
         private readonly string _password;
-        private readonly bool _shouldAdvertise;
+        private readonly bool _isPrivate;
         private readonly string _version;
         private readonly int _maxPlayers;
 
         public HostRegistrationRequest(string hostName, PeerInfo peerInfo, string password, 
-            bool shouldAdvertise, string version, int maxPlayers) {
+            bool isPrivate, string version, int maxPlayers) {
             _hostName = hostName;
             _peerInfo = peerInfo;
             _password = password;
-            _shouldAdvertise = shouldAdvertise;
+            _isPrivate = isPrivate;
             _version = version;
             _maxPlayers = maxPlayers;
         }
@@ -127,8 +127,8 @@ namespace RamjetAnvil.Padrone.Client {
             get { return _password; }
         }
 
-        public bool ShouldAdvertise {
-            get { return _shouldAdvertise; }
+        public bool IsPrivate {
+            get { return _isPrivate; }
         }
 
         public string Version {

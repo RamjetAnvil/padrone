@@ -61,11 +61,12 @@ object MasterServerQueryLayer {
     def generate() = ClientSecret(UUID.randomUUID().toString)
   }
 
-  case class Host(endpoint: PeerInfo, name: HostName, password: Option[BCryptHash], isAdvertised: Boolean,
+  case class Host(endpoint: PeerInfo, name: HostName, password: Option[BCryptHash], isPrivate: Boolean,
                   location: Option[Location], hostingPlayer: Player, version: GameVersion, registeredAt: Instant,
                   lastPingReceived: Instant, maxPlayers: Int, clients: Map[ClientSessionId, ClientState] = Map.empty) {
     def playerCount = clients.size + 1
     def isFull = playerCount >= maxPlayers
+    def isPasswordProtected = password.isDefined
     def externalEndpoint = endpoint.externalEndpoint
   }
 
@@ -95,7 +96,7 @@ object MasterServerQueryLayer {
         host.name,
         host.hostingPlayer.info.name,
         host.endpoint,
-        isPasswordProtected = host.password.isDefined,
+        isPasswordProtected = host.isPasswordProtected,
         onlineSince = host.registeredAt,
         distanceInKm = distance,
         country = host.location.map(_.country.name),
@@ -106,13 +107,15 @@ object MasterServerQueryLayer {
 
     // TODO Sorting hosts is incredibly slow once we have lots of registered hosts
     //      We need a more efficient sorting algorithm
-    def listHosts(version: GameVersion, hideFull: Boolean, peerAddress: Option[InetAddress] = None)
+    def listHosts(version: GameVersion, hideFull: Boolean, hidePasswordProtected: Boolean,
+                  peerAddress: Option[InetAddress] = None)
                  (implicit locationDb: LocationDb): Seq[RemoteHost] = {
       val peerLocation = peerAddress.flatMap(locationDb(_).toOption)
       val hosts = db.hosts.values
         .filter { host =>
-          host.isAdvertised &&
-          (!host.isFull || !hideFull) &&
+          host.isPrivate &&
+          !(host.isPasswordProtected && hidePasswordProtected) &&
+          !(host.isFull && hideFull) &&
           host.version == version
         }
         .map { hostRegistration =>
