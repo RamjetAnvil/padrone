@@ -113,7 +113,7 @@ object MasterServerQueryLayer {
       val peerLocation = peerAddress.flatMap(locationDb(_).toOption)
       val hosts = db.hosts.values
         .filter { host =>
-          host.isPrivate &&
+          !host.isPrivate &&
           !(host.isPasswordProtected && hidePasswordProtected) &&
           !(host.isFull && hideFull) &&
           host.version == version
