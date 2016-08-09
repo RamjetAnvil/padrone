@@ -52,7 +52,6 @@ The `csharp_client` folder contains a Unity-based client.
 ## To be done
 
 - Integrate Steam friends list to allow players to join a friend's game.
-- Password protected servers
 - Pluggable facilities for match-making
 
 ## License
