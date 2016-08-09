@@ -30,6 +30,7 @@ namespace RamjetAnvil.Padrone.Client {
         private readonly string _name;
         private readonly string _hostedBy;
         private readonly PeerInfo _peerInfo;
+        private readonly bool _isPasswordProtected;
         private readonly DateTime _onlineSince;
         private readonly double _distanceInKm;
         private readonly string _country;
@@ -37,11 +38,12 @@ namespace RamjetAnvil.Padrone.Client {
         private readonly int _playerCount;
         private readonly int _maxPlayers;
 
-        public RemoteHost(string name, string hostedBy, PeerInfo peerInfo, DateTime onlineSince, 
+        public RemoteHost(string name, string hostedBy, PeerInfo peerInfo, bool isPasswordProtected, DateTime onlineSince, 
             double distanceInKm, string country, string version, int playerCount, int maxPlayers) {
             _name = name;
             _peerInfo = peerInfo;
             _hostedBy = hostedBy;
+            _isPasswordProtected = isPasswordProtected;
             _onlineSince = onlineSince;
             _distanceInKm = distanceInKm;
             _country = country;
@@ -60,6 +62,10 @@ namespace RamjetAnvil.Padrone.Client {
 
         public PeerInfo PeerInfo {
             get { return _peerInfo; }
+        }
+
+        public bool IsPasswordProtected {
+            get { return _isPasswordProtected; }
         }
 
         public DateTime OnlineSince {

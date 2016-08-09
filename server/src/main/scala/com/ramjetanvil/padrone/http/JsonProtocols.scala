@@ -122,7 +122,7 @@ object JsonProtocols extends SprayJsonSupport with DefaultJsonProtocol {
     override def read(json: JsValue): BCryptHash = deserializationError("Cannot deserialize a BCrypt hash")
   }
   implicit val JsonHostFormat = jsonFormat11(Host.apply)
-  implicit val JsonRemoteHostFormat = jsonFormat9(RemoteHost)
+  implicit val JsonRemoteHostFormat = jsonFormat10(RemoteHost)
   implicit val JsonErrorFormat = jsonFormat1(Error)
   implicit val JsonConnectionFormat = jsonFormat2(Connection)
 

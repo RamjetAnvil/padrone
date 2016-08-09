@@ -14,12 +14,13 @@ to host and join games.
 ## Features
 
 - Login and verification whether the player has bought your game.
-- Keeps track of running servers.
+- Keeps track of running hosts.
 - Allows players to query the list of hosts.
-- Limits one join session per player. Allows the server to kick the player
+- Limits one join session per player. Allows the host to kick the player
   once it assumes multiple sessions are in progress on the same account.
 - Automatically sorts hosts based on distance (using Ip to Geo location)
-- User ids are never handed out, not to clients nor servers, protecting people's privacy.
+- User ids are never handed out, not to clients nor hosts, protecting people's privacy.
+- Optionally allows hosts to protect their server with a password
 
 ## How does it work?
 

@@ -84,9 +84,9 @@ object MasterServerQueryLayer {
     }
   }
 
-  case class RemoteHost(name: HostName, hostedBy: Option[String], peerInfo: PeerInfo, onlineSince: Instant,
-                        distanceInKm: Option[KiloMeters], country: Option[String], version: GameVersion,
-                        playerCount: Int, maxPlayers: Int)
+  case class RemoteHost(name: HostName, hostedBy: Option[String], peerInfo: PeerInfo, isPasswordProtected: Boolean,
+                        onlineSince: Instant, distanceInKm: Option[KiloMeters], country: Option[String],
+                        version: GameVersion, playerCount: Int, maxPlayers: Int)
 
   implicit class MasterServerDbView(db: MasterServerDb) {
 
@@ -95,6 +95,7 @@ object MasterServerQueryLayer {
         host.name,
         host.hostingPlayer.info.name,
         host.endpoint,
+        isPasswordProtected = host.password.isDefined,
         onlineSince = host.registeredAt,
         distanceInKm = distance,
         country = host.location.map(_.country.name),
