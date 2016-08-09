@@ -113,30 +113,52 @@ object HttpApi {
     val authenticatePlayer = {
       val httpClient = HttpClient.createHttpClient()
 
-      val itchConfig = itch.config(AppConfig.Itch)
-      val itchIoClient = itch.httpClient(httpClient, itchConfig)
-      implicit val itchDownloadKeyVerifier = itch.downloadKeyVerifier(itchIoClient, itchConfig)
-      implicit val itchUserApiVerifier = itch.userApiKeyVerifier(itchIoClient, itchConfig)
+      val itchAuthenticators = {
+        val authenticators = for {
+          config <- AppConfig.Itch
+        } yield {
+          val itchIoClient = itch.httpClient(httpClient, config)
+          implicit val itchDownloadKeyVerifier = itch.downloadKeyVerifier(itchIoClient, config)
+          implicit val itchUserApiVerifier = itch.userApiKeyVerifier(itchIoClient, config)
 
-      implicit val steamLoginService = {
-        val config = steam.config(AppConfig.Steam)
-        val client = steam.httpClient(httpClient, config)
-        steam.licenseVerifier(client, config)
+          val apiKeyAuthenticator = AuthTokenConverters.ItchUserApiKey.toUserAuthenticator()
+          val downloadKeyAuthenticator = AuthTokenConverters.ItchDownloadKey.toUserAuthenticator()
+          Seq(apiKeyAuthenticator, downloadKeyAuthenticator)
+        }
+        authenticators.toSeq.flatten
       }
 
-      implicit val oculusLoginService = {
-        val client = oculus.httpClient(httpClient, oculus.config(AppConfig.Oculus))
-        oculus.licenseVerifier(client)
+      val steamAuthenticator = {
+        for {
+          config <- AppConfig.Steam
+        } yield {
+          val client = steam.httpClient(httpClient, config)
+          implicit val licenseVerifier = steam.licenseVerifier(client, config)
+          AuthTokenConverters.Steam.toUserAuthenticator()
+        }
       }
 
-      implicit val adminLoginService = AdminAuthentication.adminLicenseVerifier()
+      val oculusAuthenticator = {
+        for {
+          config <- AppConfig.Oculus
+        } yield {
+          val client = oculus.httpClient(httpClient, config)
+          implicit val licenseVerifier = oculus.licenseVerifier(client)
+          AuthTokenConverters.Oculus.toUserAuthenticator()
+        }
+      }
 
-      val cachedAuthenticators = AuthTokenConverters.Steam.toUserAuthenticator()
-        .orElse(AuthTokenConverters.Oculus.toUserAuthenticator())
-        .orElse(AuthTokenConverters.ItchUserApiKey.toUserAuthenticator())
-        .orElse(AuthTokenConverters.ItchDownloadKey.toUserAuthenticator())
-        .cacheLogins
-      val nonCachedAuthenticators = AuthTokenConverters.Admin.toUserAuthenticator()
+      val cachedAuthenticators = Seq(steamAuthenticator, oculusAuthenticator)
+          .flatten
+          .++:(itchAuthenticators)
+          .reduce((auths, next) => auths.orElse(next))
+          .cacheLogins
+
+      val nonCachedAuthenticators = {
+        implicit val adminLoginService = AdminAuthentication.adminLicenseVerifier()
+        AuthTokenConverters.Admin.toUserAuthenticator()
+      }
+
       val authenticators = cachedAuthenticators
         .orElse(nonCachedAuthenticators)
         .build

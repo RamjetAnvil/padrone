@@ -4,7 +4,7 @@
 *Pa*: dad.  
 *Drone*: A person who does tedious or menial work; a drudge.
 
-Master server technology written in Scala that allows users of various platforms (e.g. Steam/Itch/Oculus) to
+Master HTTP server written in Scala that allows players of various platforms (e.g. Steam/Itch/Oculus) to
 play a game with each other.
 
 This is software for game developers that want to setup a master server for their
@@ -13,8 +13,8 @@ to host and join games.
 
 ## Features
 
-- Login and verification whether the player has bought your game.
-- Keeps track of running hosts.
+- Login and verification whether players have bought your game.
+- Tracks running hosts.
 - Allows players to query the list of hosts.
 - Limits one join session per player. Allows the host to kick the player
   once it assumes multiple sessions are in progress on the same account.
@@ -39,10 +39,10 @@ to verify that Player B indeed called `/join` on the Player A host.
 ## How to install
 
 - Clone the repo and go the `server` folder and build a jar with `sbt assembly`.
-- Copy the `application.conf` and fill in your Steam/Itch/Oculus server keys.
+- Copy the `example-application.conf` and fill in your Steam/Itch/Oculus server keys.
 - Put the `application.conf` in the same directory as the jar or put it in the
-`src/main/resources` folder.
-- Start with `java -jar server.jar`
+`src/main/resources` folder before creating an assembly.
+- Start the server with `java -jar server.jar`
 - Make sure to use another webserver to provide HTTPS and redirect the requests
 to this server.
 

@@ -26,7 +26,10 @@ package com.ramjetanvil.padrone
 
 import java.io.File
 
-import com.typesafe.config.ConfigFactory
+import com.ramjetanvil.padrone.http.client.{itch, oculus, steam}
+import com.typesafe.config.{Config, ConfigException, ConfigFactory}
+
+import scala.util.{Failure, Success, Try}
 
 object AppConfig {
 
@@ -38,7 +41,16 @@ object AppConfig {
   val MasterServer = Global.getConfig("com.ramjetanvil.padrone")
   val Server = MasterServer.getConfig("server")
 
-  val Steam = MasterServer.getConfig("steam")
-  val Itch = MasterServer.getConfig("itch-io")
-  val Oculus = MasterServer.getConfig("oculus")
+  val Steam = optionalConfig("steam").map(steam.config)
+  val Itch = optionalConfig("itch-io").map(itch.config)
+  val Oculus = optionalConfig("oculus").map(oculus.config)
+
+
+  private def optionalConfig(key: String): Option[Config] = {
+    Try(MasterServer.getConfig(key)) match {
+      case Success(config) => Some(config)
+      case Failure(ex: ConfigException.Missing) => None
+      case Failure(ex) => throw ex
+    }
+  }
 }
