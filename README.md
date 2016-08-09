@@ -4,7 +4,7 @@
 *Pa*: dad.  
 *Drone*: A person who does tedious or menial work; a drudge.
 
-Master HTTP server written in Scala that allows players of various platforms (e.g. Steam/Itch/Oculus) to
+HTTP-based master server written in Scala that allows players of various platforms (e.g. Steam/Itch/Oculus) to
 play a game with each other.
 
 This is software for game developers that want to setup a master server for their
