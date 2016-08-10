@@ -104,7 +104,7 @@ object JsonProtocols extends SprayJsonSupport with DefaultJsonProtocol {
     override def read(json: JsValue): Player = deserializationError("Cannot deserialize a player")
   }
 
-  object JsonIpEndpointFormat extends JsonFormat[IpEndpoint] {
+  implicit object JsonIpEndpointFormat extends JsonFormat[IpEndpoint] {
     override def write(ipEndpoint: IpEndpoint): JsValue = JsString(ipEndpoint.toString)
     override def read(json: JsValue): IpEndpoint = json match {
       case JsString(ipEndpointStr) =>
