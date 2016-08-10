@@ -104,7 +104,17 @@ object JsonProtocols extends SprayJsonSupport with DefaultJsonProtocol {
     override def read(json: JsValue): Player = deserializationError("Cannot deserialize a player")
   }
 
-  implicit val JsonIpEndpointFormat = jsonFormat2(IpEndpoint.apply)
+  object JsonIpEndpointFormat extends JsonFormat[IpEndpoint] {
+    override def write(ipEndpoint: IpEndpoint): JsValue = JsString(ipEndpoint.toString)
+    override def read(json: JsValue): IpEndpoint = json match {
+      case JsString(ipEndpointStr) =>
+        IpEndpoint.parse(ipEndpointStr) match {
+          case Success(ipEndpoint) => ipEndpoint
+          case Failure(e) => deserializationError("Wrong format for IpEndpoint", e)
+        }
+      case x => deserializationError("Wrong json type $x for IpEndpoint")
+    }
+  }
   implicit val JsonCountryFormat = singleValueFormat[Country, String](Country.apply, _.isoCode)
   implicit def JsonGeoCoordsFormat = jsonFormat2(GeoCoords.apply)
   implicit val JsonLocationFormat = jsonFormat2(Location)

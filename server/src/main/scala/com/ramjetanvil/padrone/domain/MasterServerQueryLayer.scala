@@ -44,11 +44,11 @@ import com.ramjetanvil.padrone.util.UnitOfMeasure.KiloMeters
 
 object MasterServerQueryLayer {
 
-  case class PeerInfo(externalEndpoint: IpEndpoint, internalEndpoint: IpEndpoint) {
+  case class PeerInfo(external: IpEndpoint, internal: IpEndpoint) {
     def contains(ipEndpoint: IpEndpoint): Boolean = {
-      ipEndpoint == externalEndpoint || ipEndpoint == internalEndpoint
+      ipEndpoint == external || ipEndpoint == internal
     }
-    override def toString: String = s"($externalEndpoint,$internalEndpoint)"
+    override def toString: String = s"($external,$internal)"
   }
   case class HostName(value: String) extends AnyVal
   case class GameVersion(value: String) extends AnyVal
@@ -67,7 +67,7 @@ object MasterServerQueryLayer {
     def playerCount = clients.size + 1
     def isFull = playerCount >= maxPlayers
     def isPasswordProtected = password.isDefined
-    def externalEndpoint = endpoint.externalEndpoint
+    def externalEndpoint = endpoint.external
   }
 
   case class ClientState(player: Player, joinedIp: IpEndpoint,
@@ -81,7 +81,7 @@ object MasterServerQueryLayer {
 
   implicit class PeerInfoExtensions(peerInfo: PeerInfo) {
     def location(implicit locationDb: LocationDb): Option[Location] = {
-      locationDb(peerInfo.externalEndpoint.address).toOption
+      locationDb(peerInfo.external.address).toOption
     }
   }
 

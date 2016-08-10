@@ -150,12 +150,12 @@ object MasterServerAggregate {
             lastPingReceived = meta.timestamp,
             maxPlayers = maxPlayers)
 
-          findHost(peerInfo.externalEndpoint) match {
+          findHost(peerInfo.external) match {
             case Some(existingHost) =>
               if(isAllowedToModify(existingHost)) {
                 succeedWith(unregisterHost(existingHost) :+ HostRegistered(newHost))
               } else {
-                failWith(new Exception(s" $player is unauthorized to re-register at endpoint ${peerInfo.externalEndpoint}"))
+                failWith(new Exception(s" $player is unauthorized to re-register at endpoint ${peerInfo.external}"))
               }
             case None => succeedWith(HostRegistered(newHost))
           }
@@ -200,7 +200,7 @@ object MasterServerAggregate {
               val maybeLeaveEvent = clientAt(player.id).get(db).map { leaver =>
                 Left(leaver.player.id, leaver.joinedIp)
               }.toSeq
-              val joinEvent = Joined(player, host.endpoint.externalEndpoint, sessionId, secret)
+              val joinEvent = Joined(player, host.endpoint.external, sessionId, secret)
               succeedWith(maybeLeaveEvent :+ joinEvent)
             case None => fail
           }
@@ -232,7 +232,7 @@ object MasterServerAggregate {
       // TODO Use the state monad to allow for incremental state updates
       val updateDb = event match {
         case HostRegistered(host) =>
-          registeredHosts.modify(hosts => hosts + (host.endpoint.externalEndpoint -> host))
+          registeredHosts.modify(hosts => hosts + (host.endpoint.external -> host))
 
         case HostUnregistered(externalEndpoint) =>
           registeredHosts.modify(hosts => hosts - externalEndpoint)

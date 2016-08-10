@@ -40,7 +40,7 @@ object DataTypes {
                                        isPrivate: Boolean,
                                        version: GameVersion,
                                        maxPlayers: Int) extends ClientMessage {
-      def externalEndpoint: IpEndpoint = peerInfo.externalEndpoint
+      def externalEndpoint: IpEndpoint = peerInfo.external
     }
     case class PingRequest(hostEndpoint: IpEndpoint, connectedClients: Set[ClientSessionId]) extends ClientMessage
     case class JoinRequest(hostEndpoint: IpEndpoint, password: Option[String]) extends ClientMessage

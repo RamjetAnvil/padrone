@@ -46,6 +46,8 @@ to verify that Player B indeed called `/join` on the Player A host.
 - Make sure to use another webserver to provide HTTPS and redirect the requests
 to this server.
 
+**Please checkout the [wiki](https://github.com/RamjetAnvil/padrone/wiki) for further details.**
+
 ## The client
 
 The `csharp_client` folder contains a Unity-based client.
