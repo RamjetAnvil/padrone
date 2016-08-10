@@ -36,6 +36,8 @@ that the game has to send to the host.
 Once Player B establishes a connection Player A can call `/player-info`
 to verify that Player B indeed called `/join` on the Player A host.
 
+**Please checkout the [wiki](https://github.com/RamjetAnvil/padrone/wiki) for further details.**
+
 ## How to install
 
 - Clone the repo and go the `server` folder and build a jar with `sbt assembly`.
@@ -45,8 +47,6 @@ to verify that Player B indeed called `/join` on the Player A host.
 - Start the server with `java -jar server.jar`
 - Make sure to use another webserver to provide HTTPS and redirect the requests
 to this server.
-
-**Please checkout the [wiki](https://github.com/RamjetAnvil/padrone/wiki) for further details.**
 
 ## The client
 
