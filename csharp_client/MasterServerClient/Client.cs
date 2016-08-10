@@ -20,7 +20,7 @@ namespace RamjetAnvil.Padrone.Client {
         void HealthCheck(Action<HttpStatusCode> responseHandler);
         void Me(Action<HttpStatusCode, PlayerInfo> responseHandler);
 
-        void Join(IPEndPoint hostEndpoint, Action<HttpStatusCode, JoinResponse> responseHandler);
+        void Join(IPEndPoint hostEndpoint, string password, Action<HttpStatusCode, JoinResponse> responseHandler);
         void Leave(Action<HttpStatusCode> responseHandler);
         void ReportLeave(IPEndPoint hostEndpoint, ClientSessionId sessionId, Action<HttpStatusCode> responseHandler);
 
@@ -65,7 +65,7 @@ namespace RamjetAnvil.Padrone.Client {
         }
 
         public void UnregisterHost(IPEndPoint externalEndpoint, Action<HttpStatusCode> responseHandler) {
-            Post("unregister-host", externalEndpoint, (statusCode, data) => responseHandler(statusCode));
+            Post("unregister-host", new UnregisterHostRequest(externalEndpoint), (statusCode, data) => responseHandler(statusCode));
         }
 
         public void ListHosts(bool hideFull, int limit, Action<HttpStatusCode, IList<RemoteHost>> responseHandler) {
@@ -118,8 +118,8 @@ namespace RamjetAnvil.Padrone.Client {
             });
         }
 
-        public void Join(IPEndPoint hostEndpoint, Action<HttpStatusCode, JoinResponse> responseHandler) {
-            Post("join", new JoinRequest(hostEndpoint), (statusCode, data) => {
+        public void Join(IPEndPoint hostEndpoint, string password, Action<HttpStatusCode, JoinResponse> responseHandler) {
+            Post("join", new JoinRequest(hostEndpoint, password), (statusCode, data) => {
                 JoinResponse joinResponse = null;
                 if (statusCode == HttpStatusCode.OK) {
                     using (var stringReader = new StringReader(data))

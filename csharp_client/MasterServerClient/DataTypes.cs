@@ -140,6 +140,18 @@ namespace RamjetAnvil.Padrone.Client {
         }
     }
 
+    public class UnregisterHostRequest {
+        private readonly IPEndPoint _externalEndpoint;
+
+        public UnregisterHostRequest(IPEndPoint externalEndpoint) {
+            _externalEndpoint = externalEndpoint;
+        }
+
+        public IPEndPoint ExternalEndpoint {
+            get { return _externalEndpoint; }
+        }
+    }
+
     public class PingRequest {
         private readonly IPEndPoint _hostEndpoint;
         private readonly IList<ClientSessionId> _connectedClients; 
