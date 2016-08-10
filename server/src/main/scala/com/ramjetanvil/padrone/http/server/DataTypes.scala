@@ -42,6 +42,7 @@ object DataTypes {
                                        maxPlayers: Int) extends ClientMessage {
       def externalEndpoint: IpEndpoint = peerInfo.external
     }
+    case class HostUnregisterRequest(externalEndpoint: IpEndpoint) extends ClientMessage
     case class PingRequest(hostEndpoint: IpEndpoint, connectedClients: Set[ClientSessionId]) extends ClientMessage
     case class JoinRequest(hostEndpoint: IpEndpoint, password: Option[String]) extends ClientMessage
     case class ReportLeaveRequest(hostEndpoint: IpEndpoint, sessionId: ClientSessionId) extends ClientMessage

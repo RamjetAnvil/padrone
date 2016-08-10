@@ -267,9 +267,9 @@ object HttpApi {
             }
           } ~
           path("unregister-host") {
-            entity(as[IpEndpoint]) { externalIpEndpoint =>
+            entity(as[HostUnregisterRequest]) { request =>
               complete {
-                dispatchCommand(UnregisterHost(externalIpEndpoint))
+                dispatchCommand(UnregisterHost(request.externalEndpoint))
                 StatusCodes.OK
               }
             }

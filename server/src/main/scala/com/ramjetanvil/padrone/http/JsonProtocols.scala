@@ -189,7 +189,8 @@ object JsonProtocols extends SprayJsonSupport with DefaultJsonProtocol {
     }
 
     // Client messages
-    implicit val JsonPeerRegistrationRequestFormat = jsonFormat6(HostRegistrationRequest)
+    implicit val JsonHostRegistrationRequestFormat = jsonFormat6(HostRegistrationRequest)
+    implicit val JsonHostUnregisterRequestFormat = jsonFormat1(HostUnregisterRequest)
     implicit val JsonPingRequestFormat = jsonFormat2(PingRequest)
     implicit val JsonJoinRequestFormat = jsonFormat2(JoinRequest)
     implicit val JsonJoinResponseFormat = jsonFormat2(JoinResponse)
