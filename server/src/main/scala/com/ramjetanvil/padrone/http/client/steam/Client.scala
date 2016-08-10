@@ -112,7 +112,7 @@ object Client {
     override def fetchUserDetails(steamUserId: SteamUserId): Future[SteamUserDetails] = {
       httpClient(requests.GetPlayerSummariesV2(Map("steamids" -> steamUserId.value)))
         .unmarshallTo[JsValue]()
-        .map(responseJson ⇒ {
+        .map(responseJson => {
           /* Example response:
             {"response":{"players":[{
              "steamid":"76561197979120212",

@@ -32,7 +32,7 @@ import scala.io.Source.stdin
 
 object PasswordHashingTool extends App {
   val random = new SecureRandom()
-  val rounds = 10
+  val rounds = 11
   stdin.getLines().foreach { password =>
     println(s"hashing password: '$password'")
     val hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt(rounds, random))

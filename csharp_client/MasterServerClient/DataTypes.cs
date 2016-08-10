@@ -5,24 +5,24 @@ using System.Net;
 namespace RamjetAnvil.Padrone.Client {
 
     public class PeerInfo {
-        private readonly IPEndPoint _externalEndpoint;
-        private readonly IPEndPoint _internalEndpoint;
+        private readonly IPEndPoint _external;
+        private readonly IPEndPoint _internal;
 
-        public PeerInfo(IPEndPoint externalEndpoint, IPEndPoint internalEndpoint) {
-            _externalEndpoint = externalEndpoint;
-            _internalEndpoint = internalEndpoint;
+        public PeerInfo(IPEndPoint external, IPEndPoint @internal) {
+            _external = external;
+            _internal = @internal;
         }
 
-        public IPEndPoint ExternalEndpoint {
-            get { return _externalEndpoint; }
+        public IPEndPoint External {
+            get { return _external; }
         }
 
-        public IPEndPoint InternalEndpoint {
-            get { return _internalEndpoint; }
+        public IPEndPoint Internal {
+            get { return _internal; }
         }
 
         public override string ToString() {
-            return string.Format("(ext:{0},int:{1})", _externalEndpoint, _internalEndpoint);
+            return string.Format("(ext:{0},int:{1})", _external, _internal);
         }
     }
 
@@ -189,19 +189,19 @@ namespace RamjetAnvil.Padrone.Client {
     }
 
     public class JoinResponse {
-        private readonly string _sessionId;
-        private readonly string _secret;
+        private readonly ClientSessionId _sessionId;
+        private readonly ClientSecret _secret;
 
-        public JoinResponse(string sessionId, string secret) {
+        public JoinResponse(ClientSessionId sessionId, ClientSecret secret) {
             _sessionId = sessionId;
             _secret = secret;
         }
 
-        public string SessionId {
+        public ClientSessionId SessionId {
             get { return _sessionId; }
         }
 
-        public string Secret {
+        public ClientSecret Secret {
             get { return _secret; }
         }
     }

@@ -12,7 +12,7 @@ using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace RamjetAnvil.Padrone.Client {
 
-    public interface IMasterServerClient {
+    public interface IPadroneClient {
         void RegisterHost(HostRegistrationRequest registration, Action<HttpStatusCode> responseHandler);
         void UnregisterHost(IPEndPoint externalEndpoint, Action<HttpStatusCode> responseHandler);
         void ListHosts(bool hideFull, int limit, Action<HttpStatusCode, IList<RemoteHost>> responseHandler);
@@ -30,7 +30,7 @@ namespace RamjetAnvil.Padrone.Client {
 
     public delegate void ResponseHandler(HttpStatusCode statusCode, string data);
 
-    public class MasterServerClient : IMasterServerClient {
+    public class PadroneClient : IPadroneClient {
 
         private readonly string _masterServerUrl;
         private readonly string _appVersion;
@@ -41,7 +41,7 @@ namespace RamjetAnvil.Padrone.Client {
         private readonly Util.WWWPool _wwwPool;
         private readonly Func<AuthToken> _authTokenProvider;
 
-        public MasterServerClient(string masterServerUrl, string appVersion, Func<AuthToken> authTokenProvider,
+        public PadroneClient(string masterServerUrl, string appVersion, Func<AuthToken> authTokenProvider,
             ICoroutineScheduler coroutineScheduler, TimeSpan requestTimeout) {
 
             _customHeaders = new string[16]; // Place for 8 key-value pairs
