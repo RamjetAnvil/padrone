@@ -17,7 +17,7 @@ mainClass in assembly := Some("com.ramjetanvil.padrone.Main")
 
 libraryDependencies ++= {
   object Version {
-    val Akka = "2.4.8"
+    val Akka = "2.4.9"
     val Monocle = "1.2.2"
   }
 
