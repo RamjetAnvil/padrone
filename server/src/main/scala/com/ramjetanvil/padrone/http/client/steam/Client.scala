@@ -41,7 +41,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object Client {
 
-
   case class Configuration(url: String, appId: String, key: String, developers: Set[SteamUserId])
   object Configuration {
     def fromAppConfig(config: Config): Configuration = {

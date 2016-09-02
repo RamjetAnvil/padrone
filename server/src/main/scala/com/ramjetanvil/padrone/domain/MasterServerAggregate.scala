@@ -42,6 +42,8 @@ import com.ramjetanvil.padrone.util.geo.GeoDb.{Location, LocationDb}
 import com.typesafe.scalalogging.Logger
 import monocle.macros.GenLens
 import com.ramjetanvil.padrone.util.IpEndpoint
+import monocle._
+import monocle.function.all._
 import org.mindrot.jbcrypt.BCrypt
 import rx.lang.scala.{Observable, Subscription}
 
@@ -89,33 +91,33 @@ object MasterServerAggregate {
   }
   type EventWithMeta = (Metadata, Event)
 
+  import monocle.function.all.at
+  import monocle.std.map._
+  import monocle.std.option.some
+  import monocle.{Lens, Optional}
+
+  val registeredHosts = GenLens[MasterServerDb](_.hosts)
+  def registeredHostAt(endpoint: IpEndpoint): Lens[MasterServerDb, Option[Host]] = {
+    registeredHosts.composeLens(at(endpoint))
+  }
+  val clientsLens = GenLens[Host](_.clients)
+  def clientList(hostEndpoint: IpEndpoint): Optional[MasterServerDb, Map[ClientSessionId, ClientState]] = {
+    //https://groups.google.com/forum/#!topic/scala-monocle/i7Y4o0I7tIc
+    val hostLens = registeredHostAt(hostEndpoint) composePrism some
+    hostLens composeLens clientsLens
+  }
+  val clientLens = GenLens[MasterServerDb](_.clients)
+  def clientAt(playerId: PlayerId): Lens[MasterServerDb, Option[ClientState]] = {
+    clientLens.composeLens(at(playerId))
+  }
+
   def createAggregateRoot(pingTimeout: FiniteDuration, joinTimeout: FiniteDuration, bcryptHashStrength: Int)
                          (implicit locationDb: LocationDb,
                           ec: ExecutionContext,
                           actorSystem: ActorSystem,
                           logger: Logger): AggregateRoot[CommandWithMeta, MasterServerDb, EventWithMeta] = {
 
-    import monocle.function.all.at
-    import monocle.std.map._
-    import monocle.std.option.some
-    import monocle.{Lens, Optional}
-
     val hashPassword = BCryptHash.create(bcryptHashStrength) _
-
-    val registeredHosts = GenLens[MasterServerDb](_.hosts)
-    def registeredHostAt(endpoint: IpEndpoint): Lens[MasterServerDb, Option[Host]] = {
-      registeredHosts.composeLens(at(endpoint))
-    }
-    val clientsLens = GenLens[Host](_.clients)
-    def clientList(hostEndpoint: IpEndpoint): Optional[MasterServerDb, Map[ClientSessionId, ClientState]] = {
-      //https://groups.google.com/forum/#!topic/scala-monocle/i7Y4o0I7tIc
-      val hostLens = registeredHostAt(hostEndpoint) composePrism some
-      hostLens composeLens clientsLens
-    }
-    val clientLens = GenLens[MasterServerDb](_.clients)
-    def clientAt(playerId: PlayerId): Lens[MasterServerDb, Option[ClientState]] = {
-      clientLens.composeLens(at(playerId))
-    }
 
     val commandHandler: CommandHandler[CommandWithMeta, MasterServerDb, EventWithMeta] = { case (db, (meta, command)) =>
       import com.ramjetanvil.padrone.util.Util.Time._
@@ -226,46 +228,49 @@ object MasterServerAggregate {
       withMetadata(meta)(commandResult)
     }
 
-    val eventHandler: EventHandler[MasterServerDb, EventWithMeta] = { case (db, (Metadata(_, timestamp), event)) =>
-      import Event._
+    new ActorAggregateRoot(commandHandler)(handleEvent)(MasterServerDb.initialValue)
+  }
 
-      // TODO Use the state monad to allow for incremental state updates
-      val updateDb = event match {
-        case HostRegistered(host) =>
-          registeredHosts.modify(hosts => hosts + (host.endpoint.external -> host))
+  def handleEvent(db: MasterServerDb, eventWithMeta: EventWithMeta): MasterServerDb = {
+    eventWithMeta match {
+      case (Metadata(_, timestamp), event) =>
+        import Event._
 
-        case HostUnregistered(externalEndpoint) =>
-          registeredHosts.modify(hosts => hosts - externalEndpoint)
+        // TODO Use the state monad to allow for incremental state updates
+        val updateDb = event match {
+          case HostRegistered(host) =>
+            registeredHosts.modify(hosts => hosts + (host.endpoint.external -> host))
 
-        case Pinged(externalEndpoint) =>
-          (registeredHostAt(externalEndpoint) composePrism some).modify { host =>
-            host.copy(lastPingReceived = timestamp)
-          }
+          case HostUnregistered(externalEndpoint) =>
+            registeredHosts.modify(hosts => hosts - externalEndpoint)
 
-        case Joined(player, hostEndpoint, sessionId, secret) =>
-          db: MasterServerDb => {
-            val clientState = ClientState(player, hostEndpoint, sessionId, secret, timestamp)
-            val newDb = clientList(hostEndpoint).modify { clients =>
-              clients + (sessionId -> clientState)
-            }(db)
-            clientAt(player.id).set(Some(clientState))(newDb)
-          }
+          case Pinged(externalEndpoint) =>
+            (registeredHostAt(externalEndpoint) composePrism some).modify { host =>
+              host.copy(lastPingReceived = timestamp)
+            }
 
-        case Left(playerId, hostEndpoint) =>
-          db: MasterServerDb => {
-            val newDb = clientList(hostEndpoint).modify { clients =>
-              clientAt(playerId).get(db) match {
-                case Some(clientState) => clients - clientState.sessionId
-                case None => clients
-              }
-            }(db)
-            clientLens.modify(clients => clients - playerId)(newDb)
-          }
-      }
-      updateDb(db)
+          case Joined(player, hostEndpoint, sessionId, secret) =>
+            db: MasterServerDb => {
+              val clientState = ClientState(player, hostEndpoint, sessionId, secret, timestamp)
+              val newDb = clientList(hostEndpoint).modify { clients =>
+                clients + (sessionId -> clientState)
+              }(db)
+              clientAt(player.id).set(Some(clientState))(newDb)
+            }
+
+          case Left(playerId, hostEndpoint) =>
+            db: MasterServerDb => {
+              val newDb = clientList(hostEndpoint).modify { clients =>
+                clientAt(playerId).get(db) match {
+                  case Some(clientState) => clients - clientState.sessionId
+                  case None => clients
+                }
+              }(db)
+              clientLens.modify(clients => clients - playerId)(newDb)
+            }
+        }
+        updateDb(db)
     }
-
-    new ActorAggregateRoot(commandHandler)(eventHandler)(MasterServerDb.initialValue)
   }
 
   def pingScheduler(pingTimeout: FiniteDuration,

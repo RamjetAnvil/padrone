@@ -63,7 +63,7 @@
                        "    <td>Endpoint</td>" +
                        "    <td>Players</td>" +
                        "    <td>Location</td>" +
-                       "    <td>Is advertised</td>" +
+                       "    <td>Is private</td>" +
                        "    <td>Version</td>" +
                        "    <td>Registered at</td>" +
                        "    <td>Last ping received</td>" +
@@ -76,7 +76,7 @@
                     name: host.name,
                     endpoint: host.endpoint.external + ", " + host.endpoint.internal,
                     players: playerCount + '/' + host.maxPlayers,
-                    isAdvertised: host.isAdvertised ? "yes" : "no",
+                    isPrivate: host.isPrivate ? "yes" : "no",
                     version: "v" + host.version,
                     location: host.location != null ? googleMapsLink(host.location.coordinates) +
                                                       " (" + host.location.country + ")"
@@ -94,7 +94,7 @@
                         "   <td>" + renderableHost.endpoint + "</td>" +
                         "   <td>" + renderableHost.players + "</td>" +
                         "   <td>" + renderableHost.location + "</td>" +
-                        "   <td>" + renderableHost.isAdvertised + "</td>" +
+                        "   <td>" + renderableHost.isPrivate + "</td>" +
                         "   <td>" + renderableHost.version + "</td>" +
                         "   <td>" + renderableHost.registeredAt + "</td>" +
                         "   <td>" + renderableHost.lastPingReceived + "</td>" +

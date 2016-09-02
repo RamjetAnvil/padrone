@@ -58,7 +58,7 @@ import com.ramjetanvil.padrone.http.client.HttpClient
 import com.ramjetanvil.padrone.http.server.Authentication.UserAuthentication.{AdminAuthentication, AuthTokenConverters}
 import com.ramjetanvil.padrone.http.server.DataTypes.GameCommunicationProtocol.HostRegistrationRequest
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
@@ -151,8 +151,9 @@ object HttpApi {
       val cachedAuthenticators = Seq(steamAuthenticator, oculusAuthenticator)
           .flatten
           .++:(itchAuthenticators)
-          .reduce((auths, next) => auths.orElse(next))
-          .cacheLogins
+          .reduceOption((auths, next) => auths.orElse(next))
+          .map(_.cacheLogins)
+          .getOrElse(PartialFunction.empty[AuthToken, Future[Player]])
 
       val nonCachedAuthenticators = {
         implicit val adminLoginService = AdminAuthentication.adminLicenseVerifier()
