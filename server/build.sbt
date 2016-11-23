@@ -17,14 +17,17 @@ mainClass in assembly := Some("com.ramjetanvil.padrone.Main")
 
 libraryDependencies ++= {
   object Version {
-    val Akka = "2.4.9"
+    val Akka = "2.4.14"
+    val AkkaHttp = "10.0.0"
     val Monocle = "1.2.2"
   }
 
   Seq(
     "com.typesafe.akka"           %% "akka-actor"                         % Version.Akka,
-    "com.typesafe.akka"           %% "akka-http-experimental"             % Version.Akka,
-    "com.typesafe.akka"           %% "akka-http-spray-json-experimental"  % Version.Akka,
+    "com.typesafe.akka"           %% "akka-http-core"                     % Version.AkkaHttp,
+    "com.typesafe.akka"           %% "akka-http"                          % Version.AkkaHttp,
+    "com.typesafe.akka"           %% "akka-http-spray-json"               % Version.AkkaHttp,
+    //"com.typesafe.akka"           %% "akka-http-testkit"                  % Version.AkkaHttp % test,
 
     "com.github.julien-truffaut"  %% "monocle-core"                       % Version.Monocle,
     "com.github.julien-truffaut"  %% "monocle-generic"                    % Version.Monocle,
