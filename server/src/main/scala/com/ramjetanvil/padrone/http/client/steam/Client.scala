@@ -34,8 +34,8 @@ import com.ramjetanvil.padrone.AppConfig
 import com.ramjetanvil.padrone.AppConfig._
 import com.ramjetanvil.padrone.http.client.HttpClient.HttpClient
 import com.ramjetanvil.padrone.http.client.Licensing.LicenseException
+import com.ramjetanvil.padrone.http.client.steam.JsonProtocol._
 import com.typesafe.config.Config
-import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -44,12 +44,12 @@ object Client {
   case class Configuration(url: String, appId: String, key: String, developers: Set[SteamUserId])
   object Configuration {
     def fromAppConfig(config: Config): Configuration = {
-      import collection.JavaConversions._
+      import collection.JavaConverters._
       Configuration(
         url = config.getString("url"),
         appId = config.getString("app-id"),
         key = config.getString("key"),
-        developers = config.getStringList("developers").toSet.map(SteamUserId))
+        developers = config.getStringList("developers").asScala.toSet.map(SteamUserId))
     }
   }
 
@@ -59,81 +59,45 @@ object Client {
 
     override def fetchGameLicense(steamId: SteamUserId): Future[GameLicense] = {
       httpClient(requests.CheckAppOwnerShipV1(Map("steamid" -> steamId.value)))
-        .unmarshallTo[JsValue]()
-        .flatMap(responseJson => {
+        .unmarshallTo[Response[AppOwnershipWrapper]]()
+        .flatMap { case Response(AppOwnershipWrapper(ownership)) =>
           val license = for {
-            appOwnership <- (responseJson \ "appownership").toOption
-            ownsApp <- (appOwnership \ "ownsapp").asOpt[Boolean].filter(_ == true)
-            isPermanentLicense <- (appOwnership \ "permanent").asOpt[Boolean].orElse(Some(false))
+            appOwnership <- ownership
+            ownsApp <- appOwnership.ownsApp.filter(_ == true)
+            isPermanentLicense <- appOwnership.permanent.orElse(Some(false))
           } yield GameLicense(steamId, isPermanentLicense)
           license match {
             case Some(l) => Future(l)
             case None => Future.failed(LicenseException(s"$steamId does not own app: ${config.appId}"))
           }
-        })
+        }
     }
 
     override def authenticateUser(ticket: AuthSessionTicket): Future[SteamUserId] = {
       httpClient(requests.AuthenticateUserTicket(Map("ticket" → ticket.value)))
-        .unmarshallTo[JsValue]()
-        .flatMap(responseJson => {
-          /* Example response:
-             {"response":{"params":{"result":"OK",
-                                    "steamid":"76561197979120212",
-                                    "ownersteamid":"76561197979120212",
-                                    "vacbanned":false,
-                                    "publisherbanned":false}}}*/
-          /* Example response:
-             {"response":{"error":{"errorcode":101,
-                                   "errordesc":"Invalid ticket"}}} */
-
-          // TODO Handle user bans?
-          /*
-           val isUserBanned = {
-              val isVacBanned = (payload \ "vacbanned").asOpt[Boolean].getOrElse(false)
-              val isPublisherBanned = (payload \ "publisherbanned").asOpt[Boolean].getOrElse(false)
-              isVacBanned || isPublisherBanned
-            }
-           */
+        .unmarshallTo[Response[AuthResult]]()
+        .flatMap { case Response(AuthResult(authParameters)) =>
           val steamId = for {
-            payload <- (responseJson \ "response" \ "params").toOption
-            _ <- (payload \ "result").asOpt[String].filter(_ == "OK")
-            steamId <- (payload \ "steamid").asOpt[String]
+            _ <- authParameters.result.filter(_ == "OK")
+            steamId <- authParameters.steamId
           } yield steamId
 
           steamId match {
             case Some(userId) => Future(SteamUserId(userId))
             case _ => Future.failed(new Exception(s"Failed to authenticate user, ticket $ticket is invalid or user is banned"))
           }
-        })
+        }
     }
 
     override def fetchUserDetails(steamUserId: SteamUserId): Future[SteamUserDetails] = {
       httpClient(requests.GetPlayerSummariesV2(Map("steamids" -> steamUserId.value)))
-        .unmarshallTo[JsValue]()
-        .map(responseJson => {
-          /* Example response:
-            {"response":{"players":[{
-             "steamid":"76561197979120212",
-             "communityvisibilitystate":3,
-             "profilestate":1,
-             "personaname":"Frank Versnel",
-             "lastlogoff":1453898882,
-             "profileurl":"http://steamcommunity.com/profiles/76561197979120212/",
-             "avatar":"https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/06/0660d5ff2c9060fd1e46378d058e8cabc22bc0cc.jpg",
-             "avatarmedium":"https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/06/0660d5ff2c9060fd1e46378d058e8cabc22bc0cc_medium.jpg",
-             "avatarfull":"https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/06/0660d5ff2c9060fd1e46378d058e8cabc22bc0cc_full.jpg",
-             "personastate":0,
-             "primaryclanid":"103582791438615283",
-             "timecreated":1131548717,
-             "personastateflags":0}]}}*/
+        .unmarshallTo[Response[Players]]()
+        .map { case Response(Players(players)) =>
           val userDetails = for {
-            players <- (responseJson \ "response" \ "players").asOpt[JsArray]
-            playerProfile <- players.value.headOption
-            playerName <- (playerProfile \ "personaname").asOpt[String]
-          } yield SteamUserDetails(steamUserId, playerName, (playerProfile \ "avatarfull").asOpt[String])
+            playerProfile <- players.headOption
+          } yield SteamUserDetails(steamUserId, playerProfile.personaName.getOrElse(""), playerProfile.avatarFull)
           userDetails.getOrElse(SteamUserDetails(steamUserId, ""))
-        })
+        }
     }
 
     class Requests(implicit config: Configuration) {
@@ -184,6 +148,7 @@ object Client {
           httpMethod match {
             case GET => HttpRequest(GET, url.withQuery(Query(combinedParams)), headers)
             case POST => HttpRequest(POST, url, headers, FormData(combinedParams).toEntity)
+            case m => throw new Exception(s"Unsupported method: $m")
           }
         }
       }

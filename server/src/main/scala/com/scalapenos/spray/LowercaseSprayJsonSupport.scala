@@ -22,18 +22,34 @@
  * SOFTWARE.
  */
 
-package com.ramjetanvil.padrone.util.scheduling
+package com.scalapenos.spray
 
-import scala.concurrent.duration.FiniteDuration
+import spray.json._
 
 /**
-  * Scheduler that schedules only one schedule per key. Calling schedule/scheduleOnce multiple times with the same
-  * key will overwrite (and thus cancel) any existing schedule.
-  *
-  * @tparam Key
-  */
-trait Rescheduler[Key] {
-  def scheduleOnce(key: Key, delay: FiniteDuration)(work: => Unit): Unit
-  def schedule(key: Key, initialDelay: FiniteDuration, interval: FiniteDuration)(work: => Unit): Unit
-  def cancelSchedule(key: Key): Unit
+ * A custom version of the Spray DefaultJsonProtocol with a modified field naming strategy
+ */
+trait LowercaseSprayJsonSupport extends DefaultJsonProtocol {
+  import reflect._
+
+  /**
+   * This is the most important piece of code in this object!
+   * It overrides the default naming scheme used by spray-json and replaces it with a scheme that turns camelcased
+   * names into snakified names (i.e. using underscores as word separators).
+   */
+  override protected def extractFieldNames(classTag: ClassTag[_]) = {
+    super.extractFieldNames(classTag).map(toLowercase)
+  }
+
+  private val toLowercase: String => String = {
+    import java.util.Locale
+
+    val Pass1 = """([A-Z]+)([A-Z][a-z])""".r
+    val Pass2 = """([a-z\d])([A-Z])""".r
+    val Replacement = "$1$2"
+
+    name => Pass2.replaceAllIn(Pass1.replaceAllIn(name, Replacement), Replacement).toLowerCase(Locale.US)
+  }
 }
+
+object LowercaseSprayJsonSupport extends SnakifiedSprayJsonSupport

@@ -41,7 +41,6 @@ import akka.http.scaladsl.util.FastFuture
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
 import com.typesafe.scalalogging.Logger
-import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -91,11 +90,11 @@ object HttpClient {
     }
   }
 
-  implicit def playJsValueUnmarshaller(implicit fm: Materializer): FromEntityUnmarshaller[JsValue] =
-    Unmarshaller.byteStringUnmarshaller
-      .forContentTypes(`application/json`)
-      .mapWithCharset { (data, charset) =>
-        val input = if (charset == `UTF-8`) data.utf8String else data.decodeString(charset.nioCharset.name)
-        Json.parse(input)
-      }
+//  implicit def playJsValueUnmarshaller(implicit fm: Materializer): FromEntityUnmarshaller[JsValue] =
+//    Unmarshaller.byteStringUnmarshaller
+//      .forContentTypes(`application/json`)
+//      .mapWithCharset { (data, charset) =>
+//        val input = if (charset == `UTF-8`) data.utf8String else data.decodeString(charset.nioCharset.name)
+//        Json.parse(input)
+//      }
 }

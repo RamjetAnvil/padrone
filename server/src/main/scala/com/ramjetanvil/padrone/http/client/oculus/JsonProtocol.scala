@@ -22,18 +22,17 @@
  * SOFTWARE.
  */
 
-package com.ramjetanvil.padrone.util.scheduling
+package com.ramjetanvil.padrone.http.client.oculus
 
-import scala.concurrent.duration.FiniteDuration
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import com.scalapenos.spray.SnakifiedSprayJsonSupport
 
-/**
-  * Scheduler that schedules only one schedule per key. Calling schedule/scheduleOnce multiple times with the same
-  * key will overwrite (and thus cancel) any existing schedule.
-  *
-  * @tparam Key
-  */
-trait Rescheduler[Key] {
-  def scheduleOnce(key: Key, delay: FiniteDuration)(work: => Unit): Unit
-  def schedule(key: Key, initialDelay: FiniteDuration, interval: FiniteDuration)(work: => Unit): Unit
-  def cancelSchedule(key: Key): Unit
+object JsonProtocol extends SprayJsonSupport with SnakifiedSprayJsonSupport {
+
+  case class AuthenticationResult(isValid: Option[Boolean])
+  case class UserId(id: Option[String])
+
+  implicit val JsonAuthenticationResultFormat = jsonFormat1(AuthenticationResult)
+  implicit val JsonUserIdFormat = jsonFormat1(UserId)
+
 }

@@ -30,8 +30,8 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{HttpMethod, HttpMethods, HttpRequest, Uri}
 import com.ramjetanvil.padrone.http.client.HttpClient.HttpClient
+import com.ramjetanvil.padrone.http.client.oculus.JsonProtocol._
 import com.typesafe.config.Config
-import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -61,13 +61,13 @@ object Client {
         Uri(s"$baseUrl/me").withQuery(Query(("access_token", userAccessToken.value))),
         headers = List(Accept(`application/json`)))
       httpClient(request)
-        .unmarshallTo[JsValue]()
-        .flatMap(jsValue => {
-          (jsValue \ "id").asOpt[String] match {
+        .unmarshallTo[UserId]()
+        .flatMap { case UserId(id) =>
+          id match {
             case Some(userId) => Future(OculusUserId(userId))
             case _ => Future.failed(new Exception(s"Invalid $userAccessToken"))
           }
-        })
+        }
     }
 
     override def authenticateUser(userId: OculusUserId, nonce: Nonce): Future[OculusUserId] = {
@@ -79,16 +79,15 @@ object Client {
           ("user_id", userId.value))),
         headers = List(Accept(`application/json`)))
       httpClient(request)
-        .unmarshallTo[JsValue]()
-        .map(jsValue => (jsValue \ "is_valid").asOpt[Boolean].getOrElse(false))
-        .flatMap(userOwnsGame => {
-          if(userOwnsGame) {
+        .unmarshallTo[AuthenticationResult]()
+        .flatMap { case AuthenticationResult(userOwnsGame) =>
+          if(userOwnsGame.getOrElse(false)) {
             Future(userId)
           } else {
             Future.failed(new Exception(s"Failed to authenticate user $userId, " +
               s"user id or nonce $nonce is invalid or user is banned"))
           }
-        })
+        }
     }
   }
 

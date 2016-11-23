@@ -44,12 +44,12 @@ object Client {
   case class Configuration(url: String, apiKey: String, gameId: GameId, developers: Set[UserId])
   object Configuration {
     def fromAppConfig(config: Config): Configuration = {
-      import collection.JavaConversions._
+      import collection.JavaConverters._
       Configuration(
         url = config.getString("url"),
         apiKey = config.getString("api-key"),
         gameId = GameId(BigInt(config.getString("game-id"))),
-        developers = config.getStringList("developers").toSet.map(UserId.fromString))
+        developers = config.getStringList("developers").asScala.toSet.map(UserId.fromString))
     }
   }
 

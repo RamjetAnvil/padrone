@@ -2,7 +2,7 @@ organization  := "com.ramjetanvil"
 
 version       := "0.1-SNAPSHOT"
 
-scalaVersion  := "2.11.8"
+scalaVersion  := "2.12.0"
 
 scalacOptions := Seq(
   "-unchecked",
@@ -10,8 +10,7 @@ scalacOptions := Seq(
   "-feature",
   "-encoding", "utf8",
   "-Xmax-classfile-name", "100",
-  "-language", "higherKinds",
-  "-Ybackend:GenBCode")
+  "-language", "higherKinds")
 
 mainClass in assembly := Some("com.ramjetanvil.padrone.Main")
 
@@ -19,7 +18,7 @@ libraryDependencies ++= {
   object Version {
     val Akka = "2.4.14"
     val AkkaHttp = "10.0.0"
-    val Monocle = "1.2.2"
+    val Monocle = "1.3.2"
   }
 
   Seq(
@@ -35,23 +34,22 @@ libraryDependencies ++= {
     "com.github.julien-truffaut"  %% "monocle-state"                      % Version.Monocle,
     "com.github.julien-truffaut"  %% "monocle-refined"                    % Version.Monocle,
 
+    "com.github.cb372"            %% "scalacache-caffeine"                % "0.9.3",
+    "io.reactivex"                %% "rxscala"                            % "0.26.4",
+    "org.scala-stm"               %% "scala-stm"                          % "0.8",
+    "com.jsuereth"                %% "scala-arm"                          % "2.0",
+    "org.scala-lang.modules"      %% "scala-async"                        % "0.9.6",
+    //"com.typesafe.play"           %% "play-json"                          % "2.5.10",
     "org.quartz-scheduler"        %  "quartz"                             % "2.2.2",
-    "org.scala-lang.modules"      %  "scala-async_2.11"                   % "0.9.5",
-    "com.jsuereth"                %% "scala-arm"                          % "1.4",
-    "io.reactivex"                %% "rxscala"                            % "0.26.2",
     "io.reactivex"                %  "rxjava-reactive-streams"            % "1.1.0",
-    "com.typesafe.play"           %  "play-json_2.11"                     % "2.4.6",
     "com.maxmind.geoip2"          %  "geoip2"                             % "2.7.0",
-    "org.scala-stm"               %% "scala-stm"                          % "0.7",
     "com.google.guava"            %  "guava"                              % "19.0",
-    "com.github.cb372"            %% "scalacache-caffeine"                % "0.9.1",
     "org.mindrot"                 %  "jbcrypt"                            % "0.3m",
 
     // Logging
-    "ch.qos.logback"              %  "logback-classic"                    % "1.1.3",
-    "com.typesafe.scala-logging"  %% "scala-logging"                      % "3.4.0",
+    "ch.qos.logback"              %  "logback-classic"                    % "1.1.7",
+    "com.typesafe.scala-logging"  %% "scala-logging"                      % "3.5.0",
 
     // Testing
-    "org.scalatest"               %  "scalatest_2.11"                     % "2.2.5" % "test"
-  )
+    "org.scalatest"               %%  "scalatest"                         % "3.0.1" % "test")
 }

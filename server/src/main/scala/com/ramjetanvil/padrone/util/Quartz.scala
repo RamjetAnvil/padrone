@@ -95,7 +95,7 @@ object Quartz {
         }
 
         obs.add(subscription)
-        quartzScheduler.whenClosed(subscription.unsubscribe)
+        quartzScheduler.whenClosed(() => subscription.unsubscribe())
       })
     }
 
