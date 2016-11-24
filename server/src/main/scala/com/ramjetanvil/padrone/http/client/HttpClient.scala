@@ -24,14 +24,13 @@
 
 package com.ramjetanvil.padrone.http.client
 
-import java.io.{IOException, ByteArrayInputStream}
+import java.io.{ByteArrayInputStream, IOException}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpCharsets._
-
 import akka.http.scaladsl.model.MediaTypes._
-import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Accept
@@ -43,6 +42,7 @@ import akka.util.ByteString
 import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 object HttpClient {
 
@@ -59,10 +59,7 @@ object HttpClient {
    */
   def createHttpClient(): HttpClient = {
     val client = Http()
-    request => {
-      //logger.debug(s"performing HTTP call to ${request.uri}")
-      client.singleRequest(request)
-    }
+    request => client.singleRequest(request)
   }
 
   implicit class HttpClientExtensions(httpClient: HttpClient) {
@@ -79,6 +76,15 @@ object HttpClient {
                (implicit marshaller: Marshaller[T, RequestEntity]): Future[HttpResponse] = {
       Marshal(content).to[RequestEntity]
         .flatMap(requestEntity => httpClient(HttpRequest(POST, Uri(url), headers, entity = requestEntity)))
+    }
+
+    def addLogging(implicit logger: Logger): HttpClient = { request =>
+      logger.info(s"Performing HTTP request $request")
+      httpClient(request)
+        .andThen {
+          case Success(response) => logger.info(s"HTTP response $response")
+          case Failure(exception) => logger.error(s"Failed to receive response $exception")
+        }
     }
   }
 

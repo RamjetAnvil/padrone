@@ -26,7 +26,7 @@ package com.ramjetanvil.padrone.http.client.steam
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import com.scalapenos.spray.LowercaseSprayJsonSupport
-import spray.json.{JsonFormat, RootJsonFormat}
+import spray.json.{JsValue, JsonFormat, RootJsonFormat}
 
 object JsonProtocol extends SprayJsonSupport with LowercaseSprayJsonSupport {
 
@@ -36,7 +36,7 @@ object JsonProtocol extends SprayJsonSupport with LowercaseSprayJsonSupport {
    {"response":{"error":{"errorcode":101,
                          "errordesc":"Invalid ticket"}}} */
   case class Error(error: ErrorDescription)
-  case class ErrorDescription(errorCode: Int, errorDesc: String)
+  case class ErrorDescription(errorCode: Int, errorDesc: Option[String])
 
   /* Example response:
    {"response":{"params":{"result":"OK",
@@ -47,8 +47,8 @@ object JsonProtocol extends SprayJsonSupport with LowercaseSprayJsonSupport {
   case class AuthResult(params: AuthParameters)
   case class AuthParameters(result: Option[String], steamId: Option[String])
 
-  case class AppOwnershipWrapper(appOwnership: Option[AppOwnership])
-  case class AppOwnership(ownsApp: Option[Boolean], permanent: Option[Boolean])
+  case class AppOwnership(appOwnership: Option[AppOwnershipDetails])
+  case class AppOwnershipDetails(ownsApp: Option[Boolean], permanent: Option[Boolean])
 
   /* Example response:
   {"response":{"players":[{
@@ -72,8 +72,8 @@ object JsonProtocol extends SprayJsonSupport with LowercaseSprayJsonSupport {
     jsonFormat1(Response[T])
   }
 
-  implicit val JsonAppOwnershipFormat = jsonFormat2(AppOwnership)
-  implicit val JsonAppOwnershipWrapperFormat = jsonFormat1(AppOwnershipWrapper)
+  implicit val JsonAppOwnershipFormat = jsonFormat2(AppOwnershipDetails)
+  implicit val JsonAppOwnershipWrapperFormat = jsonFormat1(AppOwnership)
 
   implicit val JsonErrorDescriptionFormat = jsonFormat2(ErrorDescription)
   implicit val JsonErrorFormat = jsonFormat1(Error)
@@ -83,4 +83,22 @@ object JsonProtocol extends SprayJsonSupport with LowercaseSprayJsonSupport {
 
   implicit val JsonPlayerDetailsFormat = jsonFormat2(PlayerDetails)
   implicit val JsonPlayersFormat = jsonFormat1(Players)
+
+  implicit def JsonDataWithError[DataFormat](implicit dataFormat: RootJsonFormat[DataFormat]) = new RootJsonFormat[Either[Error, DataFormat]] {
+    override def write(obj: Either[Error, DataFormat]): JsValue = {
+      obj match {
+        case Right(data) => dataFormat.write(data)
+        case Left(errors) => JsonErrorFormat.write(errors)
+      }
+    }
+
+    override def read(jsValue: JsValue): Either[Error, DataFormat] = {
+      val root = jsValue.asJsObject
+      if(root.fields.contains("errors")) {
+        Left(JsonErrorFormat.read(jsValue))
+      } else {
+        Right(dataFormat.read(jsValue))
+      }
+    }
+  }
 }

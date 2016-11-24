@@ -27,7 +27,7 @@ package com.ramjetanvil.padrone
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
-import com.ramjetanvil.padrone.http.client.HttpClient
+import com.ramjetanvil.padrone.http.client.HttpClient._
 import com.ramjetanvil.padrone.http.server.HttpApi
 import com.ramjetanvil.padrone.util.geo.GeoDb
 import com.ramjetanvil.padrone.http.client._
@@ -55,13 +55,13 @@ object Main extends App {
   scheduleDbReload(geoDb)
   implicit val locationDb: LocationDb = GeoDb.toLocationDb(geoDb)
 
+  val httpClient = HttpClient.createHttpClient()
+
   val port = AppConfig.Server.getInt("port")
   val bindingFuture = Http().bindAndHandle(
-    HttpApi.create(),
+    HttpApi.create(httpClient),
     AppConfig.Server.getString("interface"),
     AppConfig.Server.getInt("port"))
-
-  val httpClient = HttpClient.createHttpClient()
 
   logger.info(s"Started web server at ${AppConfig.Server.getString("interface")}:${AppConfig.Server.getInt("port")}")
 

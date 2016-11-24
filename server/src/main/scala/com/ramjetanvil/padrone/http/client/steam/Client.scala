@@ -30,8 +30,6 @@ import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Accept
-import com.ramjetanvil.padrone.AppConfig
-import com.ramjetanvil.padrone.AppConfig._
 import com.ramjetanvil.padrone.http.client.HttpClient.HttpClient
 import com.ramjetanvil.padrone.http.client.Licensing.LicenseException
 import com.ramjetanvil.padrone.http.client.steam.JsonProtocol._
@@ -59,8 +57,8 @@ object Client {
 
     override def fetchGameLicense(steamId: SteamUserId): Future[GameLicense] = {
       httpClient(requests.CheckAppOwnerShipV1(Map("steamid" -> steamId.value)))
-        .unmarshallTo[Response[AppOwnershipWrapper]]()
-        .flatMap { case Response(AppOwnershipWrapper(ownership)) =>
+        .unmarshallTo[AppOwnership]()
+        .flatMap { case AppOwnership(ownership) =>
           val license = for {
             appOwnership <- ownership
             ownsApp <- appOwnership.ownsApp.filter(_ == true)
@@ -75,18 +73,22 @@ object Client {
 
     override def authenticateUser(ticket: AuthSessionTicket): Future[SteamUserId] = {
       httpClient(requests.AuthenticateUserTicket(Map("ticket" → ticket.value)))
-        .unmarshallTo[Response[AuthResult]]()
-        .flatMap { case Response(AuthResult(authParameters)) =>
-          val steamId = for {
-            _ <- authParameters.result.filter(_ == "OK")
-            steamId <- authParameters.steamId
-          } yield steamId
+        .unmarshallTo[Response[Either[Error, AuthResult]]]()
+          .map(_.response)
+          .flatMap {
+            case Right(AuthResult(authParameters)) =>
+              val steamId = for {
+                _ <- authParameters.result.filter(_ == "OK")
+                steamId <- authParameters.steamId
+              } yield steamId
 
-          steamId match {
-            case Some(userId) => Future(SteamUserId(userId))
-            case _ => Future.failed(new Exception(s"Failed to authenticate user, ticket $ticket is invalid or user is banned"))
+              steamId match {
+                case Some(userId) => Future(SteamUserId(userId))
+                case _ => Future.failed(new Exception(s"Failed to authenticate user, ticket $ticket is invalid or user is banned"))
+              }
+            case Left(Error(ErrorDescription(errorCode, errorDescription))) =>
+              Future.failed(new Exception(s"Failed to authenticate user, due to error '$errorCode', '$errorDescription'"))
           }
-        }
     }
 
     override def fetchUserDetails(steamUserId: SteamUserId): Future[SteamUserDetails] = {

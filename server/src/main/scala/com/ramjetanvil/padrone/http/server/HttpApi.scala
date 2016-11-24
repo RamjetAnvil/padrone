@@ -54,7 +54,7 @@ import com.typesafe.scalalogging.Logger
 import com.ramjetanvil.padrone.AppConfig
 import com.ramjetanvil.padrone.domain.MasterServerAggregate
 import com.ramjetanvil.padrone.domain.MasterServerAggregate.Command.Leave
-import com.ramjetanvil.padrone.http.client.HttpClient
+import com.ramjetanvil.padrone.http.client.HttpClient.HttpClient
 import com.ramjetanvil.padrone.http.server.Authentication.UserAuthentication.{AdminAuthentication, AuthTokenConverters}
 import com.ramjetanvil.padrone.http.server.DataTypes.GameCommunicationProtocol.HostRegistrationRequest
 
@@ -71,8 +71,8 @@ object HttpApi {
   import com.ramjetanvil.padrone.http.JsonProtocols._
   import akka.http.scaladsl.server.Directives._
 
-  def create()(implicit actorSystem: ActorSystem, ec: ExecutionContext, materializer: Materializer,
-               locationDb: LocationDb, logger: Logger) = {
+  def create(httpClient: HttpClient)(implicit actorSystem: ActorSystem, ec: ExecutionContext, materializer: Materializer,
+                                              locationDb: LocationDb, logger: Logger) = {
     import Authentication._
     import GameCommunicationProtocol._
     import com.ramjetanvil.cqrs.Core.AggregateRootExtensions
@@ -111,8 +111,6 @@ object HttpApi {
       typed[Player, NoSerialization]
     }
     val authenticatePlayer = {
-      val httpClient = HttpClient.createHttpClient()
-
       val itchAuthenticators = {
         val authenticators = for {
           config <- AppConfig.Itch
